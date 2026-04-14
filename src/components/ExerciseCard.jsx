@@ -63,7 +63,7 @@ export default function ExerciseCard({
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       <div className="flex items-center justify-between">
         <Badge className={cn("uppercase", cc.soft, cc.text, "border-current/20")}>
           {index + 1} / {total}
@@ -105,7 +105,7 @@ export default function ExerciseCard({
       </div>
 
       {/* Body area: either rest ring, timed countdown, or rep/weight input */}
-      <div className="mt-6 flex-1">
+      <div className="mt-6">
         {resting ? (
           <RestRing seconds={resting} color={color} onDone={onRestDone} onSkip={onRestSkip} />
         ) : exercise.timed ? (

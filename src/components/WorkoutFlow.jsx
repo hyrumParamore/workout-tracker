@@ -87,9 +87,9 @@ export default function WorkoutFlow({ workout, initialExercises = {}, onExit, on
         </div>
       </div>
 
-      {/* Body */}
-      <div className="flex flex-1 items-stretch overflow-y-auto px-4 py-5">
-        <Card className="mx-auto flex w-full max-w-xl flex-col p-6">
+      {/* Body — card sizes to content, scrolls only if taller than viewport */}
+      <div className="flex flex-1 justify-center overflow-y-auto overscroll-contain px-4 py-5">
+        <Card className="h-fit w-full max-w-xl p-6">
           <ExerciseCard
             key={current.name + idx}
             exercise={current}
