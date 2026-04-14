@@ -16,7 +16,7 @@ export default function Layout() {
         <Outlet />
       </main>
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
       >
         <div className="safe-bottom mx-auto flex max-w-2xl items-stretch justify-around px-2 py-1.5">
           {tabs.map(({ to, label, icon: Icon }) => (

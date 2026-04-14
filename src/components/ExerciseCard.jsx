@@ -6,10 +6,21 @@ import { Badge } from "./ui/Badge";
 import { Progress } from "./ui/Progress";
 import { cn } from "../lib/cn";
 import { colorClasses } from "../data/workoutPlan";
+import RestRing from "./RestRing";
 
 // Single exercise "recipe card" — logs sets one at a time.
-// Props: exercise, existingSets, onLogSet(set), onFinish(), color, index, total
-export default function ExerciseCard({ exercise, existingSets = [], onLogSet, onFinish, color = "slate", index, total }) {
+export default function ExerciseCard({
+  exercise,
+  existingSets = [],
+  onLogSet,
+  onFinish,
+  color = "slate",
+  index,
+  total,
+  resting,
+  onRestDone,
+  onRestSkip,
+}) {
   const targetSets = exercise.sets || 1;
   const targetReps = exercise.reps;
   const cc = colorClasses[color] || colorClasses.slate;
@@ -17,7 +28,6 @@ export default function ExerciseCard({ exercise, existingSets = [], onLogSet, on
   const [reps, setReps] = useState(targetReps || 10);
   const [weight, setWeight] = useState("");
 
-  // Countdown timer for timed exercises
   const [timeLeft, setTimeLeft] = useState(exercise.timed || 0);
   const [timerRunning, setTimerRunning] = useState(false);
   const tick = useRef();
@@ -58,14 +68,14 @@ export default function ExerciseCard({ exercise, existingSets = [], onLogSet, on
         <Badge className={cn("uppercase", cc.soft, cc.text, "border-current/20")}>
           {index + 1} / {total}
         </Badge>
-        {exercise.sets > 1 && (
+        {targetSets > 1 && (
           <div className="text-xs text-slate-500">
             Set <span className="font-semibold tabular-nums text-slate-900 dark:text-slate-100">{Math.min(completedSets + 1, targetSets)}</span> of {targetSets}
           </div>
         )}
       </div>
 
-      <h1 className={cn("mt-3 text-2xl font-bold leading-tight text-slate-900 dark:text-slate-100 sm:text-3xl")}>
+      <h1 className="mt-3 text-2xl font-bold leading-tight text-slate-900 dark:text-slate-100 sm:text-3xl">
         {exercise.name}
       </h1>
 
@@ -94,60 +104,64 @@ export default function ExerciseCard({ exercise, existingSets = [], onLogSet, on
         ))}
       </div>
 
-      {/* Timed exercise UI */}
-      {exercise.timed ? (
-        <div className="mt-6 rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
-          <div className="font-mono text-center text-6xl tabular-nums text-slate-900 dark:text-slate-100">
-            {String(Math.floor(timeLeft / 60)).padStart(1, "0")}:{String(timeLeft % 60).padStart(2, "0")}
+      {/* Body area: either rest ring, timed countdown, or rep/weight input */}
+      <div className="mt-6 flex-1">
+        {resting ? (
+          <RestRing seconds={resting} color={color} onDone={onRestDone} onSkip={onRestSkip} />
+        ) : exercise.timed ? (
+          <div className="rounded-2xl border border-slate-200 p-4 dark:border-slate-800">
+            <div className="font-mono text-center text-6xl tabular-nums text-slate-900 dark:text-slate-100">
+              {String(Math.floor(timeLeft / 60)).padStart(1, "0")}:{String(timeLeft % 60).padStart(2, "0")}
+            </div>
+            <Progress value={exercise.timed - timeLeft} max={exercise.timed} className="mt-3" barClassName={cc.bg} />
+            <div className="mt-4 flex gap-2">
+              <Button className="flex-1" variant={timerRunning ? "secondary" : "accent"} onClick={() => setTimerRunning((r) => !r)}>
+                <Timer className="h-4 w-4" /> {timerRunning ? "Pause" : timeLeft === 0 ? "Restart" : "Start"}
+              </Button>
+              <Button variant="ghost" onClick={() => { setTimeLeft(exercise.timed); setTimerRunning(false); }}>Reset</Button>
+            </div>
           </div>
-          <Progress value={exercise.timed - timeLeft} max={exercise.timed} className="mt-3" barClassName={cc.bg} />
-          <div className="mt-4 flex gap-2">
-            <Button className="flex-1" variant={timerRunning ? "secondary" : "accent"} onClick={() => setTimerRunning((r) => !r)}>
-              <Timer className="h-4 w-4" /> {timerRunning ? "Pause" : timeLeft === 0 ? "Restart" : "Start"}
-            </Button>
-            <Button variant="ghost" onClick={() => { setTimeLeft(exercise.timed); setTimerRunning(false); }}>Reset</Button>
-          </div>
-        </div>
-      ) : (
-        targetReps !== null && (
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <div>
-              <Label>Reps</Label>
-              <div className="flex items-center gap-2">
-                <Button variant="secondary" size="icon" onClick={() => setReps((r) => Math.max(0, Number(r) - 1))}>
-                  <Minus className="h-4 w-4" />
-                </Button>
-                <Input type="number" inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} className="text-center text-lg tabular-nums" />
-                <Button variant="secondary" size="icon" onClick={() => setReps((r) => Number(r) + 1)}>
-                  <Plus className="h-4 w-4" />
-                </Button>
+        ) : (
+          targetReps !== null && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Reps</Label>
+                <div className="flex items-center gap-2">
+                  <Button variant="secondary" size="icon" onClick={() => setReps((r) => Math.max(0, Number(r) - 1))}>
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <Input type="number" inputMode="numeric" value={reps} onChange={(e) => setReps(e.target.value)} className="text-center text-lg tabular-nums" />
+                  <Button variant="secondary" size="icon" onClick={() => setReps((r) => Number(r) + 1)}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <Label>Weight (lbs)</Label>
+                <Input type="number" inputMode="decimal" placeholder="—" value={weight} onChange={(e) => setWeight(e.target.value)} className="text-lg tabular-nums" />
               </div>
             </div>
-            <div>
-              <Label>Weight (lbs)</Label>
-              <Input type="number" inputMode="decimal" placeholder="—" value={weight} onChange={(e) => setWeight(e.target.value)} className="text-lg tabular-nums" />
-            </div>
+          )
+        )}
+
+        {/* Previous sets */}
+        {!resting && existingSets.length > 0 && (
+          <div className="mt-4 space-y-1 text-sm text-slate-600 dark:text-slate-400">
+            {existingSets.map((s, i) => (
+              <div key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5 dark:bg-slate-800/50">
+                <span>Set {i + 1}</span>
+                <span className="tabular-nums">
+                  {s.reps != null ? `${s.reps} reps` : s.timed ? `${s.timed}s` : ""}
+                  {s.weight != null ? ` · ${s.weight} lbs` : ""}
+                </span>
+              </div>
+            ))}
           </div>
-        )
-      )}
+        )}
+      </div>
 
-      {/* Previous sets this session */}
-      {existingSets.length > 0 && (
-        <div className="mt-4 space-y-1 text-sm text-slate-600 dark:text-slate-400">
-          {existingSets.map((s, i) => (
-            <div key={i} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-1.5 dark:bg-slate-800/50">
-              <span>Set {i + 1}</span>
-              <span className="tabular-nums">
-                {s.reps != null ? `${s.reps} reps` : s.timed ? `${s.timed}s` : ""}
-                {s.weight != null ? ` · ${s.weight} lbs` : ""}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="mt-auto pt-6">
-        {!allDone ? (
+      <div className="pt-4">
+        {resting ? null : !allDone ? (
           <Button size="lg" className={cn("w-full", cc.bg, "text-white hover:opacity-90")} onClick={handleLog}>
             <Check className="h-5 w-5" />
             {completedSets + 1 === targetSets ? "Log final set" : "Log set"}
